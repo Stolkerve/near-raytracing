@@ -125,7 +125,6 @@ impl Vec3 {
     }
 
     pub fn dot_product(&self, v: &Vec3) -> f32 {
-        let length = self.length();
         return self.x * v.x + self.y * v.y + self.z * v.z;
     }
 }
@@ -204,12 +203,19 @@ impl Raytracing {
             ray_origin: Vec3{x: 0.0, y: 1.0, z: -4.0 }
         };
 
-        let mut sphere = Sphere{
-            position: Vec3{x: 0.0, y: 1.0, z: 0.0},
+        let mut shapes: Vec<Sphere> = Vec::new();
+        shapes.push(Sphere{
+            position: Vec3{x: -0.5, y: 1.0, z: 0.0},
             radius: 0.5,
             reflectivity: 0.05,
             color: Vec3{x: 255.0 / 255.0, y: 165.2 / 255.0, z: 0.0}
-        };
+        });
+        shapes.push(Sphere{
+            position: Vec3{x: 0.5, y: 1.0, z: 0.0},
+            radius: 0.5,
+            reflectivity: 1.00,
+            color: Vec3{x: 255.0 / 255.0, y: 165.2 / 255.0, z: 0.0}
+        });
 
         let mut img = RgbaImage::new(width as u32, height as u32);
         for y in -height / 2 .. (height / 2) + 1 {
@@ -223,46 +229,61 @@ impl Raytracing {
                 let mut reflectivity_at_hit: f32 = 0.0;
                 let mut ray_energy_left: f32= 1.0;
                 
-                for _bounce in 0 .. 100 {
+                for _bounce in 0 .. 100
+                {
                     let mut color = Vec3{x: 0.0, y: 0.0, z: 0.0};
                     let mut an_object_was_hit = false;
                     let mut min_hit_distance = f32::MAX;
                     let mut closest_object_ptr: *mut Sphere = std::ptr::null_mut();
-                    // if sphere.is_hit_by_ray(
-                    //     &camera.ray_origin,
-                    //     &camera.ray_dir,
-                    //     &mut ray_hit_at,
-                    //     &mut ray_bounced_direction,
-                    //     &mut distance_to_hit,
-                    //     &mut color,
-                    //     &mut reflectivity_at_hit)
-                    // {
-                    //     an_object_was_hit = true;
-                    //     if distance_to_hit < min_hit_distance {
-                    //         min_hit_distance = distance_to_hit;
-                    //         closest_object_ptr = &mut sphere;
-                    //     }
-                    // }
-                    if sphere.is_hit_by_ray(
+                    for s in &mut shapes
+                    {
+                        if s.is_hit_by_ray(
                             &camera.ray_origin,
                             &camera.ray_dir,
                             &mut ray_hit_at,
                             &mut ray_bounced_direction,
                             &mut distance_to_hit,
                             &mut color,
-                            &mut reflectivity_at_hit) {
-                        camera.ray_origin = ray_hit_at;
-                        camera.ray_dir = ray_bounced_direction;
-                      } else {
-                        if (camera.ray_dir.y.floor() as i32) < 0
+                            &mut reflectivity_at_hit)
                         {
-                            color = calculate_ground_color(&camera.ray_origin, &camera.ray_dir);
-                            reflectivity_at_hit = 0.0;
+                            an_object_was_hit = true;
+                            if distance_to_hit < min_hit_distance
+                            {
+                                min_hit_distance = distance_to_hit;
+                                closest_object_ptr = s;
+                                // assert_eq!(true, !closest_object_ptr.is_null());
+                            }
+                        }
+                    }
+                    unsafe
+                    {
+                        if !closest_object_ptr.is_null()
+                        {
+                            if (*closest_object_ptr).is_hit_by_ray(
+                                &camera.ray_origin,
+                                &camera.ray_dir,
+                                &mut ray_hit_at,
+                                &mut ray_bounced_direction,
+                                &mut distance_to_hit,
+                                &mut color,
+                                &mut reflectivity_at_hit)
+                            {
+                                camera.ray_origin = ray_hit_at;
+                                camera.ray_dir = ray_bounced_direction;
+                            }
                         }
                         else
                         {
-                            color = calculate_sky_color(&camera.ray_dir, &(sky_color.normalize()));
-                            reflectivity_at_hit = 0.0;
+                            if (camera.ray_dir.y.floor() as i32) < 0
+                            {
+                                color = calculate_ground_color(&camera.ray_origin, &camera.ray_dir);
+                                reflectivity_at_hit = 0.0;
+                            }
+                            else
+                            {
+                                color = calculate_sky_color(&camera.ray_dir, &(sky_color.normalize()));
+                                reflectivity_at_hit = 0.0;
+                            }
                         }
                     }
 
