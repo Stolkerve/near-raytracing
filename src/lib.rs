@@ -193,8 +193,10 @@ pub struct Raytracing {
 }
 
 #[near_bindgen]
-impl Raytracing {
-    pub fn mint(&self, width: i32, height: i32, sky_color: Vec3) -> String{
+impl Raytracing
+{
+    pub fn mint(&self, width: i32, height: i32, sky_color: Vec3) -> String
+    {
         let mut camera = Camera {
             x: Vec3{x: 0.002, y: 0.0, z: 0.0 },
             y: Vec3{x: 0.0, y: 0.002, z: 0.0 },
@@ -218,17 +220,20 @@ impl Raytracing {
         });
 
         let mut img = RgbaImage::new(width as u32, height as u32);
-        for y in -height / 2 .. (height / 2) + 1 {
-            for x in  -width / 2 .. (width / 2) + 1 {
+        for y in -height / 2 .. (height / 2) + 1
+        {
+            for x in  -width / 2 .. (width / 2) + 1
+            {
                 camera.ray_dir = ( (camera.x * (x as f32 - 0.5)) + (camera.y * (y  as f32 - 0.5)) + camera.z ).normalize() ;
                 camera.ray_origin =  Vec3{x: 0.0, y: 1.0, z: -4.0 };
+
                 let mut final_color = Vec3{x: 0.0, y: 0.0, z: 0.0};
                 let mut ray_hit_at = Vec3{x: 0.0, y: 0.0, z: 0.0};
                 let mut ray_bounced_direction = Vec3{x: 0.0, y: 0.0, z: 0.0};
                 let mut distance_to_hit: f32 = 0.0;
                 let mut reflectivity_at_hit: f32 = 0.0;
                 let mut ray_energy_left: f32= 1.0;
-                
+            
                 for _bounce in 0 .. 100
                 {
                     let mut color = Vec3{x: 0.0, y: 0.0, z: 0.0};
@@ -302,7 +307,7 @@ impl Raytracing {
                 img.put_pixel((-x + (width / 2)) as u32, (-y + (height / 2)) as u32, Rgba([r, g, b, 255u8]));
             }
         }
-        
+            
         let img: image::DynamicImage = image::DynamicImage::ImageRgba8(img);
         let mut png_buf = vec![];
         img.write_to(&mut png_buf, image::ImageOutputFormat::Png);
